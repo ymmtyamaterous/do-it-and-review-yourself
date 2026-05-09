@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -6,77 +7,103 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ── Diary Design System – Light (Soft Minimalism + Botanical palette) ── */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  /* Surface / Background */
+  --background: oklch(0.977 0.004 91);        /* #faf9f7 */
+  --foreground: oklch(0.130 0.007 152);        /* #1a1c1b */
+
+  /* Card */
+  --card: oklch(1 0 0);                         /* #ffffff */
+  --card-foreground: oklch(0.130 0.007 152);
+
+  /* Popover */
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --popover-foreground: oklch(0.130 0.007 152);
+
+  /* Primary – Sage Green (#406651) */
+  --primary: oklch(0.432 0.073 153);
+  --primary-foreground: oklch(1 0 0);
+
+  /* Secondary – Soft Blue (#4a6176) */
+  --secondary: oklch(0.408 0.057 224);
+  --secondary-foreground: oklch(1 0 0);
+
+  /* Muted – Surface container low (#f4f3f1) */
+  --muted: oklch(0.957 0.004 91);
+  --muted-foreground: oklch(0.497 0.015 152);  /* #717973 outline */
+
+  /* Accent – Surface container (#efeeec) */
+  --accent: oklch(0.938 0.004 91);
+  --accent-foreground: oklch(0.130 0.007 152);
+
+  /* Destructive – Error (#ba1a1a) */
+  --destructive: oklch(0.426 0.198 22);
+
+  /* Border / Input */
+  --border: oklch(0.898 0.004 91);              /* #e3e2e0 */
+  --input: oklch(0.957 0.004 91);               /* warm input bg #f4f3f1 */
+  --ring: oklch(0.432 0.073 153);               /* sage green focus ring */
+
+  /* Radius */
+  --radius: 0.5rem;
+
+  /* Sidebar (keep sensible defaults) */
+  --sidebar: oklch(0.957 0.004 91);
+  --sidebar-foreground: oklch(0.130 0.007 152);
+  --sidebar-primary: oklch(0.432 0.073 153);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.938 0.004 91);
+  --sidebar-accent-foreground: oklch(0.130 0.007 152);
+  --sidebar-border: oklch(0.898 0.004 91);
+  --sidebar-ring: oklch(0.432 0.073 153);
 }
 
+/* ── Diary Design System – Dark ── */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.87 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* inverse-surface #2f3130 */
+  --background: oklch(0.210 0.007 152);
+  /* inverse-on-surface #f1f1ef */
+  --foreground: oklch(0.947 0.003 91);
+
+  --card: oklch(0.242 0.007 152);
+  --card-foreground: oklch(0.947 0.003 91);
+
+  --popover: oklch(0.242 0.007 152);
+  --popover-foreground: oklch(0.947 0.003 91);
+
+  /* inverse-primary #a6d0b5 */
+  --primary: oklch(0.815 0.065 152);
+  --primary-foreground: oklch(0.130 0.007 152);
+
+  --secondary: oklch(0.560 0.057 224);
+  --secondary-foreground: oklch(0.947 0.003 91);
+
+  --muted: oklch(0.262 0.007 152);
+  --muted-foreground: oklch(0.648 0.015 152);
+
+  --accent: oklch(0.280 0.007 152);
+  --accent-foreground: oklch(0.947 0.003 91);
+
+  --destructive: oklch(0.704 0.191 22);
+
+  --border: oklch(0.947 0.003 91 / 12%);
+  --input: oklch(0.947 0.003 91 / 8%);
+  --ring: oklch(0.815 0.065 152);
+
+  --sidebar: oklch(0.242 0.007 152);
+  --sidebar-foreground: oklch(0.947 0.003 91);
+  --sidebar-primary: oklch(0.815 0.065 152);
+  --sidebar-primary-foreground: oklch(0.130 0.007 152);
+  --sidebar-accent: oklch(0.280 0.007 152);
+  --sidebar-accent-foreground: oklch(0.947 0.003 91);
+  --sidebar-border: oklch(0.947 0.003 91 / 12%);
+  --sidebar-ring: oklch(0.815 0.065 152);
 }
 
 @theme inline {
-  --font-sans: "Inter Variable", sans-serif;
+  --font-sans: "Manrope", sans-serif;
+  --font-serif: "Newsreader", serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

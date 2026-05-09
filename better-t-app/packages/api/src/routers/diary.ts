@@ -1,0 +1,304 @@
+import { db } from "@better-t-app/db";
+import { diary } from "@better-t-app/db/schema/diary";
+import { user } from "@better-t-app/db/schema/auth";
+import { ORPCError } from "@orpc/server";
+import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { z } from "zod";
+
+import { protectedProcedure, publicProcedure } from "../index";
+
+const habitCheckItemSchema = z.object({
+  label: z.string(),
+  checked: z.boolean(),
+});
+
+const weatherEnum = z.enum(["sunny", "cloudy", "rainy", "snowy", "other"]).optional();
+const moodEnum = z.enum(["great", "good", "neutral", "bad", "terrible"]).optional();
+
+const diaryInputSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD"),
+  title: z.string().min(1).max(100),
+  weather: weatherEnum,
+  events: z.string().optional(),
+  mood: moodEnum,
+  goodThings: z.string().optional(),
+  reflections: z.string().optional(),
+  gratitude: z.string().optional(),
+  tomorrowGoals: z.string().optional(),
+  tomorrowJoys: z.string().optional(),
+  learnings: z.string().optional(),
+  habitChecks: z.array(habitCheckItemSchema).optional(),
+  todayInOneWord: z.string().max(100).optional(),
+  freeText: z.string().optional(),
+  isPublic: z.boolean().optional().default(false),
+});
+
+function generateId(): string {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 20);
+}
+
+export const diaryRouter = {
+  create: protectedProcedure
+    .input(diaryInputSchema)
+    .handler(async ({ input, context }) => {
+      const id = generateId();
+      const now = new Date();
+      await db.insert(diary).values({
+        id,
+        userId: context.session.user.id,
+        date: input.date,
+        title: input.title,
+        weather: input.weather ?? null,
+        events: input.events ?? null,
+        mood: input.mood ?? null,
+        goodThings: input.goodThings ?? null,
+        reflections: input.reflections ?? null,
+        gratitude: input.gratitude ?? null,
+        tomorrowGoals: input.tomorrowGoals ?? null,
+        tomorrowJoys: input.tomorrowJoys ?? null,
+        learnings: input.learnings ?? null,
+        habitChecks: input.habitChecks ? JSON.stringify(input.habitChecks) : null,
+        todayInOneWord: input.todayInOneWord ?? null,
+        freeText: input.freeText ?? null,
+        isPublic: input.isPublic ?? false,
+        createdAt: now,
+        updatedAt: now,
+      });
+      return { id, createdAt: now.toISOString() };
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        title: z.string().min(1).max(100).optional(),
+        weather: weatherEnum,
+        events: z.string().optional(),
+        mood: moodEnum,
+        goodThings: z.string().optional(),
+        reflections: z.string().optional(),
+        gratitude: z.string().optional(),
+        tomorrowGoals: z.string().optional(),
+        tomorrowJoys: z.string().optional(),
+        learnings: z.string().optional(),
+        habitChecks: z.array(habitCheckItemSchema).optional(),
+        todayInOneWord: z.string().max(100).optional(),
+        freeText: z.string().optional(),
+        isPublic: z.boolean().optional(),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const { id, ...fields } = input;
+      const existing = await db.query.diary.findFirst({
+        where: and(eq(diary.id, id), isNull(diary.deletedAt)),
+      });
+      if (!existing) throw new ORPCError("NOT_FOUND");
+      if (existing.userId !== context.session.user.id) throw new ORPCError("FORBIDDEN");
+
+      await db
+        .update(diary)
+        .set({
+          ...(fields.date !== undefined && { date: fields.date }),
+          ...(fields.title !== undefined && { title: fields.title }),
+          ...(fields.weather !== undefined && { weather: fields.weather }),
+          ...(fields.events !== undefined && { events: fields.events }),
+          ...(fields.mood !== undefined && { mood: fields.mood }),
+          ...(fields.goodThings !== undefined && { goodThings: fields.goodThings }),
+          ...(fields.reflections !== undefined && { reflections: fields.reflections }),
+          ...(fields.gratitude !== undefined && { gratitude: fields.gratitude }),
+          ...(fields.tomorrowGoals !== undefined && { tomorrowGoals: fields.tomorrowGoals }),
+          ...(fields.tomorrowJoys !== undefined && { tomorrowJoys: fields.tomorrowJoys }),
+          ...(fields.learnings !== undefined && { learnings: fields.learnings }),
+          ...(fields.habitChecks !== undefined && {
+            habitChecks: JSON.stringify(fields.habitChecks),
+          }),
+          ...(fields.todayInOneWord !== undefined && { todayInOneWord: fields.todayInOneWord }),
+          ...(fields.freeText !== undefined && { freeText: fields.freeText }),
+          ...(fields.isPublic !== undefined && { isPublic: fields.isPublic }),
+          updatedAt: new Date(),
+        })
+        .where(eq(diary.id, id));
+      return { success: true };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const existing = await db.query.diary.findFirst({
+        where: and(eq(diary.id, input.id), isNull(diary.deletedAt)),
+      });
+      if (!existing) throw new ORPCError("NOT_FOUND");
+      if (existing.userId !== context.session.user.id) throw new ORPCError("FORBIDDEN");
+
+      await db
+        .update(diary)
+        .set({ deletedAt: new Date() })
+        .where(eq(diary.id, input.id));
+      return { success: true };
+    }),
+
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input, context }) => {
+      const entry = await db.query.diary.findFirst({
+        where: and(eq(diary.id, input.id), isNull(diary.deletedAt)),
+        with: { media: true },
+      });
+      if (!entry) throw new ORPCError("NOT_FOUND");
+      if (!entry.isPublic && entry.userId !== context.session.user.id) {
+        throw new ORPCError("FORBIDDEN");
+      }
+      return {
+        ...entry,
+        habitChecks: entry.habitChecks ? JSON.parse(entry.habitChecks) : null,
+      };
+    }),
+
+  list: protectedProcedure
+    .input(
+      z.object({
+        page: z.number().int().min(1).default(1),
+        limit: z.number().int().min(1).max(100).default(20),
+        keyword: z.string().optional(),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const offset = (input.page - 1) * input.limit;
+      const conditions = [
+        eq(diary.userId, context.session.user.id),
+        isNull(diary.deletedAt),
+        ...(input.keyword
+          ? [
+              or(
+                like(diary.title, `%${input.keyword}%`),
+                like(diary.freeText, `%${input.keyword}%`),
+              ),
+            ]
+          : []),
+      ];
+
+      const [items, totalResult] = await Promise.all([
+        db.query.diary.findMany({
+          where: and(...(conditions as [ReturnType<typeof eq>])),
+          orderBy: [desc(diary.date)],
+          limit: input.limit,
+          offset,
+          with: { media: true },
+        }),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(diary)
+          .where(and(...(conditions as [ReturnType<typeof eq>]))),
+      ]);
+
+      return {
+        items: items.map((item) => ({
+          ...item,
+          habitChecks: item.habitChecks ? JSON.parse(item.habitChecks) : null,
+        })),
+        total: totalResult[0]?.count ?? 0,
+        page: input.page,
+        limit: input.limit,
+      };
+    }),
+
+  listPublic: publicProcedure
+    .input(
+      z.object({
+        page: z.number().int().min(1).default(1),
+        limit: z.number().int().min(1).max(100).default(20),
+      }),
+    )
+    .handler(async ({ input }) => {
+      const offset = (input.page - 1) * input.limit;
+      const conditions = [eq(diary.isPublic, true), isNull(diary.deletedAt)];
+
+      const [items, totalResult] = await Promise.all([
+        db
+          .select({
+            id: diary.id,
+            userId: diary.userId,
+            date: diary.date,
+            title: diary.title,
+            weather: diary.weather,
+            events: diary.events,
+            mood: diary.mood,
+            goodThings: diary.goodThings,
+            reflections: diary.reflections,
+            gratitude: diary.gratitude,
+            tomorrowGoals: diary.tomorrowGoals,
+            tomorrowJoys: diary.tomorrowJoys,
+            learnings: diary.learnings,
+            habitChecks: diary.habitChecks,
+            todayInOneWord: diary.todayInOneWord,
+            freeText: diary.freeText,
+            isPublic: diary.isPublic,
+            createdAt: diary.createdAt,
+            updatedAt: diary.updatedAt,
+            authorName: user.name,
+            authorImage: user.image,
+          })
+          .from(diary)
+          .innerJoin(user, eq(diary.userId, user.id))
+          .where(and(...conditions))
+          .orderBy(desc(diary.date))
+          .limit(input.limit)
+          .offset(offset),
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(diary)
+          .where(and(...conditions)),
+      ]);
+
+      return {
+        items: items.map((item) => ({
+          ...item,
+          habitChecks: item.habitChecks ? JSON.parse(item.habitChecks) : null,
+          author: { name: item.authorName, image: item.authorImage ?? null },
+        })),
+        total: totalResult[0]?.count ?? 0,
+        page: input.page,
+        limit: input.limit,
+      };
+    }),
+
+  getPublicById: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .handler(async ({ input }) => {
+      const [entry] = await db
+        .select({
+          id: diary.id,
+          userId: diary.userId,
+          date: diary.date,
+          title: diary.title,
+          weather: diary.weather,
+          events: diary.events,
+          mood: diary.mood,
+          goodThings: diary.goodThings,
+          reflections: diary.reflections,
+          gratitude: diary.gratitude,
+          tomorrowGoals: diary.tomorrowGoals,
+          tomorrowJoys: diary.tomorrowJoys,
+          learnings: diary.learnings,
+          habitChecks: diary.habitChecks,
+          todayInOneWord: diary.todayInOneWord,
+          freeText: diary.freeText,
+          isPublic: diary.isPublic,
+          createdAt: diary.createdAt,
+          updatedAt: diary.updatedAt,
+          authorName: user.name,
+          authorImage: user.image,
+        })
+        .from(diary)
+        .innerJoin(user, eq(diary.userId, user.id))
+        .where(and(eq(diary.id, input.id), eq(diary.isPublic, true), isNull(diary.deletedAt)));
+
+      if (!entry) throw new ORPCError("NOT_FOUND");
+      return {
+        ...entry,
+        habitChecks: entry.habitChecks ? JSON.parse(entry.habitChecks) : null,
+        author: { name: entry.authorName, image: entry.authorImage ?? null },
+      };
+    }),
+};

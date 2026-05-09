@@ -1,6 +1,7 @@
 import { createContext } from "@better-t-app/api/context";
 import { appRouter } from "@better-t-app/api/routers/index";
 import { auth } from "@better-t-app/auth";
+import { runMigrations } from "@better-t-app/db";
 import { env } from "@better-t-app/env/server";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
@@ -10,6 +11,12 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+
+// マイグレーションを起動時に実行
+await runMigrations().catch((err) => {
+  console.error("Migration failed:", err);
+  process.exit(1);
+});
 
 const app = new Hono();
 

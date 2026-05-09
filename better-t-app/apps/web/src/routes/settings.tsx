@@ -1,0 +1,264 @@
+import { Button } from "@better-t-app/ui/components/button";
+import { Input } from "@better-t-app/ui/components/input";
+import { Label } from "@better-t-app/ui/components/label";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { authClient } from "@/lib/auth-client";
+import { orpc } from "@/utils/orpc";
+
+export const Route = createFileRoute("/settings")({
+  component: SettingsPage,
+  beforeLoad: async () => {
+    const session = await authClient.getSession();
+    if (!session.data) {
+      redirect({ to: "/login", throw: true });
+    }
+    return { session };
+  },
+});
+
+const FIELD_LABELS: Record<string, string> = {
+  events: "出来事",
+  mood: "感情",
+  goodThings: "良かったこと",
+  reflections: "反省点",
+  gratitude: "感謝したこと",
+  tomorrowGoals: "明日の目標",
+  tomorrowJoys: "明日の楽しみ",
+  learnings: "学んだこと・気づき",
+  habitChecks: "健康・習慣チェック",
+  todayInOneWord: "今日を一言で",
+};
+
+type VisibleFields = {
+  events: boolean;
+  mood: boolean;
+  goodThings: boolean;
+  reflections: boolean;
+  gratitude: boolean;
+  tomorrowGoals: boolean;
+  tomorrowJoys: boolean;
+  learnings: boolean;
+  habitChecks: boolean;
+  todayInOneWord: boolean;
+};
+
+type HabitCheckItem = { id: string; label: string; order: number };
+
+function SettingsPage() {
+  const { session } = Route.useRouteContext();
+  const queryClient = useQueryClient();
+
+  const { data: settings, isLoading } = useQuery(orpc.userSettings.get.queryOptions());
+
+  const [visibleFields, setVisibleFields] = useState<VisibleFields | null>(null);
+  const [habitItems, setHabitItems] = useState<HabitCheckItem[] | null>(null);
+  const [newHabitLabel, setNewHabitLabel] = useState("");
+  const [profileName, setProfileName] = useState("");
+  const [profileImage, setProfileImage] = useState("");
+
+  const fields = visibleFields ?? settings?.visibleFields ?? ({} as VisibleFields);
+  const items = habitItems ?? settings?.habitCheckItems ?? [];
+
+  const updateSettingsMutation = useMutation(orpc.userSettings.update.mutationOptions());
+  const updateProfileMutation = useMutation(orpc.profile.update.mutationOptions());
+
+  const handleToggleField = (key: keyof VisibleFields) => {
+    setVisibleFields((prev) => ({
+      ...(prev ?? (settings?.visibleFields as VisibleFields)),
+      [key]: !(prev ?? settings?.visibleFields)?.[key],
+    }));
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      await updateSettingsMutation.mutateAsync({
+        visibleFields: fields,
+        habitCheckItems: items,
+      });
+      await queryClient.invalidateQueries({ queryKey: orpc.userSettings.get.queryOptions().queryKey });
+      toast.success("設定を保存しました");
+    } catch {
+      toast.error("保存に失敗しました");
+    }
+  };
+
+  const handleAddHabitItem = () => {
+    if (!newHabitLabel.trim()) return;
+    const newItem: HabitCheckItem = {
+      id: crypto.randomUUID(),
+      label: newHabitLabel.trim(),
+      order: items.length,
+    };
+    setHabitItems([...items, newItem]);
+    setNewHabitLabel("");
+  };
+
+  const handleRemoveHabitItem = (id: string) => {
+    setHabitItems(items.filter((item) => item.id !== id));
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      await updateProfileMutation.mutateAsync({
+        name: profileName || undefined,
+        image: profileImage || undefined,
+      });
+      toast.success("プロフィールを更新しました");
+    } catch {
+      toast.error("更新に失敗しました");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-10 w-full">
+        <div className="h-96 animate-pulse rounded-2xl bg-muted" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl w-full px-6 py-10 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground" style={{ fontFamily: "Manrope" }}>
+          設定
+        </h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">アカウントと日記の設定を管理します。</p>
+      </div>
+
+      {/* プロフィール */}
+      <section className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-black/5 dark:ring-white/8 space-y-5">
+        <div>
+          <h2 className="text-base font-semibold text-foreground" style={{ fontFamily: "Manrope" }}>
+            プロフィール
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">公開ページに表示される情報です。</p>
+        </div>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium" style={{ fontFamily: "Manrope" }}>表示名</Label>
+            <Input
+              placeholder={session.data?.user.name ?? "表示名"}
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium" style={{ fontFamily: "Manrope" }}>アイコン画像URL</Label>
+            <Input
+              placeholder="https://example.com/avatar.png"
+              value={profileImage}
+              onChange={(e) => setProfileImage(e.target.value)}
+            />
+          </div>
+        </div>
+        <Button
+          onClick={handleSaveProfile}
+          disabled={updateProfileMutation.isPending || (!profileName && !profileImage)}
+        >
+          {updateProfileMutation.isPending ? "保存中..." : "保存する"}
+        </Button>
+      </section>
+
+      {/* 表示項目設定 */}
+      <section className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-black/5 dark:ring-white/8 space-y-5">
+        <div>
+          <h2 className="text-base font-semibold text-foreground" style={{ fontFamily: "Manrope" }}>
+            日記の表示項目
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            日記作成・編集画面に表示する項目を選択してください。
+          </p>
+        </div>
+        <div className="space-y-3">
+          {(Object.keys(FIELD_LABELS) as (keyof VisibleFields)[]).map((key) => (
+            <div key={key} className="flex items-center justify-between py-1">
+              <span className="text-sm text-foreground" style={{ fontFamily: "Manrope" }}>{FIELD_LABELS[key]}</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={fields[key]}
+                onClick={() => handleToggleField(key)}
+                className={`relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  fields[key] ? "bg-primary" : "bg-muted"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                    fields[key] ? "translate-x-5.5" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          ))}
+        </div>
+        <Button
+          onClick={handleSaveSettings}
+          disabled={updateSettingsMutation.isPending}
+        >
+          {updateSettingsMutation.isPending ? "保存中..." : "保存する"}
+        </Button>
+      </section>
+
+      {/* 健康・習慣チェック項目 */}
+      <section className="rounded-2xl bg-card p-8 shadow-sm ring-1 ring-black/5 dark:ring-white/8 space-y-5">
+        <div>
+          <h2 className="text-base font-semibold text-foreground" style={{ fontFamily: "Manrope" }}>
+            健康・習慣チェック項目
+          </h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            日記に表示するチェック項目を設定してください。
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center gap-3 rounded-xl bg-muted/60 px-4 py-2.5">
+              <span className="flex-1 text-sm text-foreground" style={{ fontFamily: "Manrope" }}>{item.label}</span>
+              <button
+                type="button"
+                onClick={() => handleRemoveHabitItem(item.id)}
+                className="text-muted-foreground hover:text-destructive transition-colors"
+                aria-label="削除"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          {items.length === 0 && (
+            <p className="text-sm text-muted-foreground py-2">まだ項目がありません。</p>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <Input
+            placeholder="新しい項目を追加..."
+            value={newHabitLabel}
+            onChange={(e) => setNewHabitLabel(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddHabitItem();
+              }
+            }}
+          />
+          <Button type="button" variant="outline" onClick={handleAddHabitItem}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <Button
+          onClick={handleSaveSettings}
+          disabled={updateSettingsMutation.isPending}
+        >
+          {updateSettingsMutation.isPending ? "保存中..." : "保存する"}
+        </Button>
+      </section>
+    </div>
+  );
+}
