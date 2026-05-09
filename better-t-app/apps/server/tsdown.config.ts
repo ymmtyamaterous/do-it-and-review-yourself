@@ -5,5 +5,8 @@ export default defineConfig({
   format: "esm",
   outDir: "./dist",
   clean: true,
-  noExternal: [/@better-t-app\/.*/],
+  deps: {
+    // ワークスペースパッケージのみバンドル（他の依存はexternal扱い）
+    onlyBundle: [/@better-t-app\/.*/],
+  },
 });
