@@ -3,7 +3,7 @@ import { Input } from "@better-t-app/ui/components/input";
 import { Label } from "@better-t-app/ui/components/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { Plus, Trash2, Upload } from "lucide-react";
+import { Check, Plus, Trash2, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -61,6 +61,11 @@ function SettingsPage() {
   const [profileName, setProfileName] = useState("");
   const [profileImageDataUrl, setProfileImageDataUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  // 変更検知
+  const settingsDirty = visibleFields !== null || habitItems !== null;
 
   const fields = visibleFields ?? settings?.visibleFields ?? ({} as VisibleFields);
   const items = habitItems ?? settings?.habitCheckItems ?? [];
@@ -82,7 +87,11 @@ function SettingsPage() {
         habitCheckItems: items,
       });
       await queryClient.invalidateQueries({ queryKey: orpc.userSettings.get.queryOptions().queryKey });
-      toast.success("設定を保存しました");
+      // 変更を保存済みとしてリセット
+      setVisibleFields(null);
+      setHabitItems(null);
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 2500);
     } catch {
       toast.error("保存に失敗しました");
     }
@@ -145,7 +154,11 @@ function SettingsPage() {
         name: profileName || undefined,
         image: profileImageDataUrl || undefined,
       });
-      toast.success("プロフィールを更新しました");
+      // 変更をリセット
+      setProfileName("");
+      setProfileImageDataUrl(null);
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 2500);
     } catch {
       toast.error("更新に失敗しました");
     }
@@ -232,9 +245,11 @@ function SettingsPage() {
         </div>
         <Button
           onClick={handleSaveProfile}
-          disabled={updateProfileMutation.isPending || (!profileName && !profileImageDataUrl)}
+          disabled={updateProfileMutation.isPending || profileSaved || (!profileName && !profileImageDataUrl)}
+          variant={profileSaved ? "outline" : "default"}
+          className={profileSaved ? "text-primary border-primary/40" : ""}
         >
-          {updateProfileMutation.isPending ? "保存中..." : "保存する"}
+          {updateProfileMutation.isPending ? "保存中..." : profileSaved ? <><Check className="h-4 w-4" />保存しました</> : "保存する"}
         </Button>
       </section>
 
@@ -272,9 +287,11 @@ function SettingsPage() {
         </div>
         <Button
           onClick={handleSaveSettings}
-          disabled={updateSettingsMutation.isPending}
+          disabled={updateSettingsMutation.isPending || settingsSaved || !settingsDirty}
+          variant={settingsSaved ? "outline" : "default"}
+          className={settingsSaved ? "text-primary border-primary/40" : ""}
         >
-          {updateSettingsMutation.isPending ? "保存中..." : "保存する"}
+          {updateSettingsMutation.isPending ? "保存中..." : settingsSaved ? <><Check className="h-4 w-4" />保存しました</> : "保存する"}
         </Button>
       </section>
 
@@ -327,9 +344,11 @@ function SettingsPage() {
 
         <Button
           onClick={handleSaveSettings}
-          disabled={updateSettingsMutation.isPending}
+          disabled={updateSettingsMutation.isPending || settingsSaved || !settingsDirty}
+          variant={settingsSaved ? "outline" : "default"}
+          className={settingsSaved ? "text-primary border-primary/40" : ""}
         >
-          {updateSettingsMutation.isPending ? "保存中..." : "保存する"}
+          {updateSettingsMutation.isPending ? "保存中..." : settingsSaved ? <><Check className="h-4 w-4" />保存しました</> : "保存する"}
         </Button>
       </section>
     </div>
