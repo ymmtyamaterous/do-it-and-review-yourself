@@ -3,6 +3,7 @@ import { Input } from "@better-t-app/ui/components/input";
 import { Label } from "@better-t-app/ui/components/label";
 import { Checkbox } from "@better-t-app/ui/components/checkbox";
 import { useForm } from "@tanstack/react-form";
+import { useState } from "react";
 import { z } from "zod";
 
 const weatherOptions = [
@@ -86,6 +87,20 @@ export function DiaryForm({
 }: Props) {
   const today = new Date().toISOString().slice(0, 10);
 
+  // 習慣チェックの checked 状態を管理
+  const [habitCheckedMap, setHabitCheckedMap] = useState<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    for (const item of habitCheckItems) {
+      const existing = defaultHabitChecks.find((h) => h.label === item.label);
+      map[item.id] = existing?.checked ?? false;
+    }
+    return map;
+  });
+
+  const toggleHabitCheck = (id: string) => {
+    setHabitCheckedMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const form = useForm({
     defaultValues: {
       date: defaultValues?.date ?? today,
@@ -113,10 +128,10 @@ export function DiaryForm({
       },
     },
     onSubmit: async ({ value }) => {
-      const checks: HabitCheck[] = habitCheckItems.map((item) => {
-        const existing = defaultHabitChecks.find((h) => h.label === item.label);
-        return { label: item.label, checked: existing?.checked ?? false };
-      });
+      const checks: HabitCheck[] = habitCheckItems.map((item) => ({
+        label: item.label,
+        checked: habitCheckedMap[item.id] ?? false,
+      }));
       await onSubmit(value, checks);
     },
   });
@@ -281,6 +296,33 @@ export function DiaryForm({
             </div>
           )}
         </form.Field>
+        </div>
+      )}
+
+      {/* 健康・習慣チェック */}
+      {visibleFields.habitChecks && habitCheckItems.length > 0 && (
+        <div className="rounded-2xl bg-card px-6 py-5 shadow-sm ring-1 ring-black/5 dark:ring-white/8">
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>
+            健康・習慣チェック
+          </Label>
+          <ul className="mt-3 space-y-2">
+            {habitCheckItems.map((item) => (
+              <li key={item.id} className="flex items-center gap-3">
+                <Checkbox
+                  id={`habit-${item.id}`}
+                  checked={habitCheckedMap[item.id] ?? false}
+                  onCheckedChange={() => toggleHabitCheck(item.id)}
+                />
+                <label
+                  htmlFor={`habit-${item.id}`}
+                  className="text-sm cursor-pointer select-none"
+                  style={{ fontFamily: "Manrope" }}
+                >
+                  {item.label}
+                </label>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
