@@ -18,7 +18,7 @@ import { Route as DiaryIndexRouteImport } from './routes/diary/index'
 import { Route as PublicIdRouteImport } from './routes/public/$id'
 import { Route as DiaryNewRouteImport } from './routes/diary/new'
 import { Route as DiaryIdRouteImport } from './routes/diary/$id'
-import { Route as DiaryIdEditRouteImport } from './routes/diary/$id.edit'
+import { Route as DiaryIdEditRouteImport } from './routes/diary/$id_.edit'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -66,9 +66,9 @@ const DiaryIdRoute = DiaryIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiaryIdEditRoute = DiaryIdEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => DiaryIdRoute,
+  id: '/diary/$id_/edit',
+  path: '/diary/$id/edit',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -76,7 +76,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
-  '/diary/$id': typeof DiaryIdRouteWithChildren
+  '/diary/$id': typeof DiaryIdRoute
   '/diary/new': typeof DiaryNewRoute
   '/public/$id': typeof PublicIdRoute
   '/diary/': typeof DiaryIndexRoute
@@ -88,7 +88,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
-  '/diary/$id': typeof DiaryIdRouteWithChildren
+  '/diary/$id': typeof DiaryIdRoute
   '/diary/new': typeof DiaryNewRoute
   '/public/$id': typeof PublicIdRoute
   '/diary': typeof DiaryIndexRoute
@@ -101,12 +101,12 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
-  '/diary/$id': typeof DiaryIdRouteWithChildren
+  '/diary/$id': typeof DiaryIdRoute
   '/diary/new': typeof DiaryNewRoute
   '/public/$id': typeof PublicIdRoute
   '/diary/': typeof DiaryIndexRoute
   '/public/': typeof PublicIndexRoute
-  '/diary/$id/edit': typeof DiaryIdEditRoute
+  '/diary/$id_/edit': typeof DiaryIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -144,7 +144,7 @@ export interface FileRouteTypes {
     | '/public/$id'
     | '/diary/'
     | '/public/'
-    | '/diary/$id/edit'
+    | '/diary/$id_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -152,11 +152,12 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
-  DiaryIdRoute: typeof DiaryIdRouteWithChildren
+  DiaryIdRoute: typeof DiaryIdRoute
   DiaryNewRoute: typeof DiaryNewRoute
   PublicIdRoute: typeof PublicIdRoute
   DiaryIndexRoute: typeof DiaryIndexRoute
   PublicIndexRoute: typeof PublicIndexRoute
+  DiaryIdEditRoute: typeof DiaryIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -224,37 +225,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DiaryIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/diary/$id/edit': {
-      id: '/diary/$id/edit'
-      path: '/edit'
+    '/diary/$id_/edit': {
+      id: '/diary/$id_/edit'
+      path: '/diary/$id/edit'
       fullPath: '/diary/$id/edit'
       preLoaderRoute: typeof DiaryIdEditRouteImport
-      parentRoute: typeof DiaryIdRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface DiaryIdRouteChildren {
-  DiaryIdEditRoute: typeof DiaryIdEditRoute
-}
-
-const DiaryIdRouteChildren: DiaryIdRouteChildren = {
-  DiaryIdEditRoute: DiaryIdEditRoute,
-}
-
-const DiaryIdRouteWithChildren =
-  DiaryIdRoute._addFileChildren(DiaryIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
-  DiaryIdRoute: DiaryIdRouteWithChildren,
+  DiaryIdRoute: DiaryIdRoute,
   DiaryNewRoute: DiaryNewRoute,
   PublicIdRoute: PublicIdRoute,
   DiaryIndexRoute: DiaryIndexRoute,
   PublicIndexRoute: PublicIndexRoute,
+  DiaryIdEditRoute: DiaryIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

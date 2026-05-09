@@ -8,7 +8,7 @@ import { orpc } from "@/utils/orpc";
 import { DiaryForm } from "@/components/diary-form";
 import type { DiaryFormValues, FieldVisibility } from "@/components/diary-form";
 
-export const Route = createFileRoute("/diary/$id/edit")({
+export const Route = createFileRoute("/diary/$id_/edit")({
   component: DiaryEditPage,
   beforeLoad: async () => {
     const session = await authClient.getSession();
