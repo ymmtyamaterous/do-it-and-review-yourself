@@ -12,6 +12,19 @@ const habitCheckItemSchema = z.object({
   checked: z.boolean(),
 });
 
+const fieldVisibilitySchema = z.object({
+  events: z.boolean().default(true),
+  goodThings: z.boolean().default(true),
+  reflections: z.boolean().default(true),
+  gratitude: z.boolean().default(true),
+  tomorrowGoals: z.boolean().default(true),
+  tomorrowJoys: z.boolean().default(true),
+  learnings: z.boolean().default(true),
+  habitChecks: z.boolean().default(true),
+  todayInOneWord: z.boolean().default(true),
+  freeText: z.boolean().default(true),
+}).optional();
+
 const weatherEnum = z.enum(["sunny", "cloudy", "rainy", "snowy", "other"]).optional();
 const moodEnum = z.enum(["great", "good", "neutral", "bad", "terrible"]).optional();
 
@@ -31,6 +44,7 @@ const diaryInputSchema = z.object({
   todayInOneWord: z.string().max(100).optional(),
   freeText: z.string().optional(),
   isPublic: z.boolean().optional().default(false),
+  fieldVisibility: fieldVisibilitySchema,
 });
 
 function generateId(): string {
@@ -61,6 +75,7 @@ export const diaryRouter = {
         todayInOneWord: input.todayInOneWord ?? null,
         freeText: input.freeText ?? null,
         isPublic: input.isPublic ?? false,
+        fieldVisibility: input.fieldVisibility ? JSON.stringify(input.fieldVisibility) : null,
         createdAt: now,
         updatedAt: now,
       });
@@ -86,6 +101,7 @@ export const diaryRouter = {
         todayInOneWord: z.string().max(100).optional(),
         freeText: z.string().optional(),
         isPublic: z.boolean().optional(),
+        fieldVisibility: fieldVisibilitySchema,
       }),
     )
     .handler(async ({ input, context }) => {
@@ -116,6 +132,9 @@ export const diaryRouter = {
           ...(fields.todayInOneWord !== undefined && { todayInOneWord: fields.todayInOneWord }),
           ...(fields.freeText !== undefined && { freeText: fields.freeText }),
           ...(fields.isPublic !== undefined && { isPublic: fields.isPublic }),
+          ...(fields.fieldVisibility !== undefined && {
+            fieldVisibility: fields.fieldVisibility ? JSON.stringify(fields.fieldVisibility) : null,
+          }),
           updatedAt: new Date(),
         })
         .where(eq(diary.id, id));
@@ -152,6 +171,7 @@ export const diaryRouter = {
       return {
         ...entry,
         habitChecks: entry.habitChecks ? JSON.parse(entry.habitChecks) : null,
+        fieldVisibility: entry.fieldVisibility ? JSON.parse(entry.fieldVisibility) : null,
       };
     }),
 
@@ -196,6 +216,7 @@ export const diaryRouter = {
         items: items.map((item) => ({
           ...item,
           habitChecks: item.habitChecks ? JSON.parse(item.habitChecks) : null,
+          fieldVisibility: item.fieldVisibility ? JSON.parse(item.fieldVisibility) : null,
         })),
         total: totalResult[0]?.count ?? 0,
         page: input.page,
@@ -234,6 +255,7 @@ export const diaryRouter = {
             todayInOneWord: diary.todayInOneWord,
             freeText: diary.freeText,
             isPublic: diary.isPublic,
+            fieldVisibility: diary.fieldVisibility,
             createdAt: diary.createdAt,
             updatedAt: diary.updatedAt,
             authorName: user.name,
@@ -252,11 +274,24 @@ export const diaryRouter = {
       ]);
 
       return {
-        items: items.map((item) => ({
-          ...item,
-          habitChecks: item.habitChecks ? JSON.parse(item.habitChecks) : null,
-          author: { name: item.authorName, image: item.authorImage ?? null },
-        })),
+        items: items.map((item) => {
+          const fv: Record<string, boolean> | null = item.fieldVisibility ? JSON.parse(item.fieldVisibility) : null;
+          return {
+            ...item,
+            events: fv === null || fv.events !== false ? item.events : null,
+            goodThings: fv === null || fv.goodThings !== false ? item.goodThings : null,
+            reflections: fv === null || fv.reflections !== false ? item.reflections : null,
+            gratitude: fv === null || fv.gratitude !== false ? item.gratitude : null,
+            tomorrowGoals: fv === null || fv.tomorrowGoals !== false ? item.tomorrowGoals : null,
+            tomorrowJoys: fv === null || fv.tomorrowJoys !== false ? item.tomorrowJoys : null,
+            learnings: fv === null || fv.learnings !== false ? item.learnings : null,
+            habitChecks: (fv === null || fv.habitChecks !== false) && item.habitChecks ? JSON.parse(item.habitChecks) : null,
+            todayInOneWord: fv === null || fv.todayInOneWord !== false ? item.todayInOneWord : null,
+            freeText: fv === null || fv.freeText !== false ? item.freeText : null,
+            fieldVisibility: fv,
+            author: { name: item.authorName, image: item.authorImage ?? null },
+          };
+        }),
         total: totalResult[0]?.count ?? 0,
         page: input.page,
         limit: input.limit,
@@ -285,7 +320,7 @@ export const diaryRouter = {
           todayInOneWord: diary.todayInOneWord,
           freeText: diary.freeText,
           isPublic: diary.isPublic,
-          createdAt: diary.createdAt,
+            fieldVisibility: diary.fieldVisibility,
           updatedAt: diary.updatedAt,
           authorName: user.name,
           authorImage: user.image,
@@ -295,9 +330,20 @@ export const diaryRouter = {
         .where(and(eq(diary.id, input.id), eq(diary.isPublic, true), isNull(diary.deletedAt)));
 
       if (!entry) throw new ORPCError("NOT_FOUND");
+      const fv: Record<string, boolean> | null = entry.fieldVisibility ? JSON.parse(entry.fieldVisibility) : null;
       return {
         ...entry,
-        habitChecks: entry.habitChecks ? JSON.parse(entry.habitChecks) : null,
+        events: fv === null || fv.events !== false ? entry.events : null,
+        goodThings: fv === null || fv.goodThings !== false ? entry.goodThings : null,
+        reflections: fv === null || fv.reflections !== false ? entry.reflections : null,
+        gratitude: fv === null || fv.gratitude !== false ? entry.gratitude : null,
+        tomorrowGoals: fv === null || fv.tomorrowGoals !== false ? entry.tomorrowGoals : null,
+        tomorrowJoys: fv === null || fv.tomorrowJoys !== false ? entry.tomorrowJoys : null,
+        learnings: fv === null || fv.learnings !== false ? entry.learnings : null,
+        habitChecks: (fv === null || fv.habitChecks !== false) && entry.habitChecks ? JSON.parse(entry.habitChecks) : null,
+        todayInOneWord: fv === null || fv.todayInOneWord !== false ? entry.todayInOneWord : null,
+        freeText: fv === null || fv.freeText !== false ? entry.freeText : null,
+        fieldVisibility: fv,
         author: { name: entry.authorName, image: entry.authorImage ?? null },
       };
     }),

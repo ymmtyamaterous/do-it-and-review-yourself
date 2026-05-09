@@ -67,16 +67,17 @@ function DiaryDetailPage() {
 
   const isOwner = data.userId === session.data?.user.id;
   const habitChecks = data.habitChecks as { label: string; checked: boolean }[] | null;
+  const fv = data.fieldVisibility as Record<string, boolean> | null;
 
   const sections = [
-    { label: "出来事", value: data.events },
-    { label: "良かったこと", value: data.goodThings },
-    { label: "反省点", value: data.reflections },
-    { label: "感謝したこと", value: data.gratitude },
-    { label: "明日の目標", value: data.tomorrowGoals },
-    { label: "明日の楽しみ", value: data.tomorrowJoys },
-    { label: "学んだこと・気づき", value: data.learnings },
-    { label: "自由記述欄", value: data.freeText },
+    { label: "出来事", value: data.events, fvKey: "events" },
+    { label: "良かったこと", value: data.goodThings, fvKey: "goodThings" },
+    { label: "反省点", value: data.reflections, fvKey: "reflections" },
+    { label: "感謝したこと", value: data.gratitude, fvKey: "gratitude" },
+    { label: "明日の目標", value: data.tomorrowGoals, fvKey: "tomorrowGoals" },
+    { label: "明日の楽しみ", value: data.tomorrowJoys, fvKey: "tomorrowJoys" },
+    { label: "学んだこと・気づき", value: data.learnings, fvKey: "learnings" },
+    { label: "自由記述欄", value: data.freeText, fvKey: "freeText" },
   ];
 
   return (
@@ -153,15 +154,28 @@ function DiaryDetailPage() {
 
         {/* 各セクション */}
         <div className="space-y-7">
-          {sections.map(({ label, value }) =>
+          {sections.map(({ label, value, fvKey }) =>
             value ? (
               <div key={label}>
-                <h3
-                  className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                  style={{ fontFamily: "Manrope" }}
-                >
-                  {label}
-                </h3>
+                <div className="mb-2 flex items-center gap-2">
+                  <h3
+                    className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                    style={{ fontFamily: "Manrope" }}
+                  >
+                    {label}
+                  </h3>
+                  {data.isPublic && fv !== null && (
+                    fv[fvKey] !== false ? (
+                      <span className="flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                        <Globe className="h-2.5 w-2.5" />公開
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        <Lock className="h-2.5 w-2.5" />非公開
+                      </span>
+                    )
+                  )}
+                </div>
                 <p
                   className="whitespace-pre-wrap text-foreground"
                   style={{ fontFamily: "Newsreader", fontSize: "16px", lineHeight: "28px" }}
@@ -174,12 +188,25 @@ function DiaryDetailPage() {
 
           {habitChecks && habitChecks.length > 0 && (
             <div>
-              <h3
-                className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                style={{ fontFamily: "Manrope" }}
-              >
-                健康・習慣チェック
-              </h3>
+              <div className="mb-3 flex items-center gap-2">
+                <h3
+                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+                  style={{ fontFamily: "Manrope" }}
+                >
+                  健康・習慣チェック
+                </h3>
+                {data.isPublic && fv !== null && (
+                  fv.habitChecks !== false ? (
+                    <span className="flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                      <Globe className="h-2.5 w-2.5" />公開
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      <Lock className="h-2.5 w-2.5" />非公開
+                    </span>
+                  )
+                )}
+              </div>
               <ul className="space-y-2">
                 {habitChecks.map((item) => (
                   <li key={item.label} className="flex items-center gap-3">

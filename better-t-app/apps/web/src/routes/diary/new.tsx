@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
 import { DiaryForm } from "@/components/diary-form";
-import type { DiaryFormValues } from "@/components/diary-form";
+import type { DiaryFormValues, FieldVisibility } from "@/components/diary-form";
 
 export const Route = createFileRoute("/diary/new")({
   component: DiaryNewPage,
@@ -26,7 +26,7 @@ function DiaryNewPage() {
 
   const createMutation = useMutation(orpc.diary.create.mutationOptions());
 
-  const handleSubmit = async (values: DiaryFormValues, habitChecks: { label: string; checked: boolean }[]) => {
+  const handleSubmit = async (values: DiaryFormValues, habitChecks: { label: string; checked: boolean }[], fieldVisibility: FieldVisibility) => {
     try {
       await createMutation.mutateAsync({
         date: values.date,
@@ -44,6 +44,7 @@ function DiaryNewPage() {
         todayInOneWord: values.todayInOneWord || undefined,
         freeText: values.freeText || undefined,
         isPublic: values.isPublic,
+        fieldVisibility,
       });
       await queryClient.invalidateQueries({ queryKey: orpc.diary.list.queryOptions({ input: { page: 1 } }).queryKey });
       toast.success("日記を保存しました");

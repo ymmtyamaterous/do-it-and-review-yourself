@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { orpc } from "@/utils/orpc";
 import { DiaryForm } from "@/components/diary-form";
-import type { DiaryFormValues } from "@/components/diary-form";
+import type { DiaryFormValues, FieldVisibility } from "@/components/diary-form";
 
 export const Route = createFileRoute("/diary/$id/edit")({
   component: DiaryEditPage,
@@ -29,7 +29,7 @@ function DiaryEditPage() {
 
   const updateMutation = useMutation(orpc.diary.update.mutationOptions());
 
-  const handleSubmit = async (values: DiaryFormValues, habitChecks: { label: string; checked: boolean }[]) => {
+  const handleSubmit = async (values: DiaryFormValues, habitChecks: { label: string; checked: boolean }[], fieldVisibility: FieldVisibility) => {
     try {
       await updateMutation.mutateAsync({
         id,
@@ -48,6 +48,7 @@ function DiaryEditPage() {
         todayInOneWord: values.todayInOneWord || undefined,
         freeText: values.freeText || undefined,
         isPublic: values.isPublic,
+        fieldVisibility,
       });
       await queryClient.invalidateQueries({ queryKey: orpc.diary.getById.queryOptions({ input: { id } }).queryKey });
       await queryClient.invalidateQueries({ queryKey: orpc.diary.list.queryOptions({ input: { page: 1 } }).queryKey });
@@ -69,6 +70,11 @@ function DiaryEditPage() {
   if (!data) return null;
 
   const habitChecks = data.habitChecks as { label: string; checked: boolean }[] | null;
+  const fieldVisibility = data.fieldVisibility as {
+    events?: boolean; goodThings?: boolean; reflections?: boolean; gratitude?: boolean;
+    tomorrowGoals?: boolean; tomorrowJoys?: boolean; learnings?: boolean;
+    habitChecks?: boolean; todayInOneWord?: boolean; freeText?: boolean;
+  } | null;
 
   return (
     <div className="mx-auto max-w-2xl w-full px-6 py-10">
@@ -106,6 +112,7 @@ function DiaryEditPage() {
         defaultHabitChecks={habitChecks ?? []}
         visibleFields={settings?.visibleFields}
         habitCheckItems={settings?.habitCheckItems}
+        defaultFieldVisibility={fieldVisibility ?? undefined}
         onSubmit={handleSubmit}
         submitLabel="更新する"
       />

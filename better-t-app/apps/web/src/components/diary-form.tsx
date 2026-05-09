@@ -4,6 +4,7 @@ import { Label } from "@better-t-app/ui/components/label";
 import { Checkbox } from "@better-t-app/ui/components/checkbox";
 import { useForm } from "@tanstack/react-form";
 import { useState } from "react";
+import { Globe, Lock } from "lucide-react";
 import { z } from "zod";
 
 const weatherOptions = [
@@ -55,12 +56,26 @@ type VisibleFields = {
   todayInOneWord: boolean;
 };
 
+export type FieldVisibility = {
+  events: boolean;
+  goodThings: boolean;
+  reflections: boolean;
+  gratitude: boolean;
+  tomorrowGoals: boolean;
+  tomorrowJoys: boolean;
+  learnings: boolean;
+  habitChecks: boolean;
+  todayInOneWord: boolean;
+  freeText: boolean;
+};
+
 type Props = {
   defaultValues?: Partial<DiaryFormValues>;
   defaultHabitChecks?: HabitCheck[];
   habitCheckItems?: HabitCheckItem[];
   visibleFields?: VisibleFields;
-  onSubmit: (values: DiaryFormValues, habitChecks: HabitCheck[]) => Promise<void>;
+  defaultFieldVisibility?: Partial<FieldVisibility>;
+  onSubmit: (values: DiaryFormValues, habitChecks: HabitCheck[], fieldVisibility: FieldVisibility) => Promise<void>;
   submitLabel: string;
 };
 
@@ -77,11 +92,53 @@ const defaultVisible: VisibleFields = {
   todayInOneWord: true,
 };
 
+const allPublic: FieldVisibility = {
+  events: true,
+  goodThings: true,
+  reflections: true,
+  gratitude: true,
+  tomorrowGoals: true,
+  tomorrowJoys: true,
+  learnings: true,
+  habitChecks: true,
+  todayInOneWord: true,
+  freeText: true,
+};
+
+function FieldVisibilityToggle({
+  isPublic,
+  onToggle,
+}: {
+  isPublic: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={isPublic ? "公開中（クリックで非公開に）" : "非公開（クリックで公開に）"}
+      className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${
+        isPublic
+          ? "bg-primary/10 text-primary hover:bg-primary/20"
+          : "bg-muted text-muted-foreground hover:bg-muted/80"
+      }`}
+      style={{ fontFamily: "Manrope" }}
+    >
+      {isPublic ? (
+        <><Globe className="h-3 w-3" />公開</>
+      ) : (
+        <><Lock className="h-3 w-3" />非公開</>
+      )}
+    </button>
+  );
+}
+
 export function DiaryForm({
   defaultValues,
   defaultHabitChecks = [],
   habitCheckItems = [],
   visibleFields = defaultVisible,
+  defaultFieldVisibility,
   onSubmit,
   submitLabel,
 }: Props) {
@@ -97,8 +154,18 @@ export function DiaryForm({
     return map;
   });
 
+  // 項目別公開設定
+  const [fieldVisibility, setFieldVisibility] = useState<FieldVisibility>(() => ({
+    ...allPublic,
+    ...defaultFieldVisibility,
+  }));
+
   const toggleHabitCheck = (id: string) => {
     setHabitCheckedMap((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleFieldVisibility = (key: keyof FieldVisibility) => {
+    setFieldVisibility((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const form = useForm({
@@ -132,7 +199,7 @@ export function DiaryForm({
         label: item.label,
         checked: habitCheckedMap[item.id] ?? false,
       }));
-      await onSubmit(value, checks);
+      await onSubmit(value, checks, fieldVisibility);
     },
   });
 
@@ -244,21 +311,27 @@ export function DiaryForm({
       {/* テキストエリア項目群 */}
       {(
         [
-          { name: "events" as const, label: "出来事", show: visibleFields.events },
-          { name: "goodThings" as const, label: "良かったこと", show: visibleFields.goodThings },
-          { name: "reflections" as const, label: "反省点", show: visibleFields.reflections },
-          { name: "gratitude" as const, label: "感謝したこと", show: visibleFields.gratitude },
-          { name: "tomorrowGoals" as const, label: "明日の目標", show: visibleFields.tomorrowGoals },
-          { name: "tomorrowJoys" as const, label: "明日の楽しみ", show: visibleFields.tomorrowJoys },
-          { name: "learnings" as const, label: "学んだこと・気づき", show: visibleFields.learnings },
+          { name: "events" as const, label: "出来事", show: visibleFields.events, fvKey: "events" as keyof FieldVisibility },
+          { name: "goodThings" as const, label: "良かったこと", show: visibleFields.goodThings, fvKey: "goodThings" as keyof FieldVisibility },
+          { name: "reflections" as const, label: "反省点", show: visibleFields.reflections, fvKey: "reflections" as keyof FieldVisibility },
+          { name: "gratitude" as const, label: "感謝したこと", show: visibleFields.gratitude, fvKey: "gratitude" as keyof FieldVisibility },
+          { name: "tomorrowGoals" as const, label: "明日の目標", show: visibleFields.tomorrowGoals, fvKey: "tomorrowGoals" as keyof FieldVisibility },
+          { name: "tomorrowJoys" as const, label: "明日の楽しみ", show: visibleFields.tomorrowJoys, fvKey: "tomorrowJoys" as keyof FieldVisibility },
+          { name: "learnings" as const, label: "学んだこと・気づき", show: visibleFields.learnings, fvKey: "learnings" as keyof FieldVisibility },
         ] as const
-      ).map(({ name, label, show }) =>
+      ).map(({ name, label, show, fvKey }) =>
         show ? (
           <div key={name} className="rounded-2xl bg-card px-6 py-5 shadow-sm ring-1 ring-black/5 dark:ring-white/8">
           <form.Field name={name}>
             {(field) => (
               <div className="space-y-2">
-                <Label htmlFor={field.name} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>{label}</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor={field.name} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>{label}</Label>
+                  <FieldVisibilityToggle
+                    isPublic={fieldVisibility[fvKey]}
+                    onToggle={() => toggleFieldVisibility(fvKey)}
+                  />
+                </div>
                 <textarea
                   id={field.name}
                   rows={3}
@@ -282,7 +355,13 @@ export function DiaryForm({
         <form.Field name="todayInOneWord">
           {(field) => (
             <div className="space-y-2">
-              <Label htmlFor={field.name} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>今日を一言で</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor={field.name} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>今日を一言で</Label>
+                <FieldVisibilityToggle
+                  isPublic={fieldVisibility.todayInOneWord}
+                  onToggle={() => toggleFieldVisibility("todayInOneWord")}
+                />
+              </div>
               <Input
                 id={field.name}
                 placeholder="例: 充実した一日だった"
@@ -302,10 +381,16 @@ export function DiaryForm({
       {/* 健康・習慣チェック */}
       {visibleFields.habitChecks && habitCheckItems.length > 0 && (
         <div className="rounded-2xl bg-card px-6 py-5 shadow-sm ring-1 ring-black/5 dark:ring-white/8">
-          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>
-            健康・習慣チェック
-          </Label>
-          <ul className="mt-3 space-y-2">
+          <div className="flex items-center justify-between mb-3">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>
+              健康・習慣チェック
+            </Label>
+            <FieldVisibilityToggle
+              isPublic={fieldVisibility.habitChecks}
+              onToggle={() => toggleFieldVisibility("habitChecks")}
+            />
+          </div>
+          <ul className="space-y-2">
             {habitCheckItems.map((item) => (
               <li key={item.id} className="flex items-center gap-3">
                 <Checkbox
@@ -331,7 +416,13 @@ export function DiaryForm({
       <form.Field name="freeText">
         {(field) => (
           <div className="space-y-2">
-            <Label htmlFor={field.name} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>自由記述欄</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor={field.name} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>自由記述欄</Label>
+              <FieldVisibilityToggle
+                isPublic={fieldVisibility.freeText}
+                onToggle={() => toggleFieldVisibility("freeText")}
+              />
+            </div>
             <textarea
               id={field.name}
               rows={4}

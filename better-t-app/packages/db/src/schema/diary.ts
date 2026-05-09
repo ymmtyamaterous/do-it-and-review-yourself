@@ -25,6 +25,7 @@ export const diary = sqliteTable(
     todayInOneWord: text("today_in_one_word"),
     freeText: text("free_text"),
     isPublic: integer("is_public", { mode: "boolean" }).notNull().default(false),
+    fieldVisibility: text("field_visibility"), // JSON string: { events, goodThings, reflections, gratitude, tomorrowGoals, tomorrowJoys, learnings, habitChecks, todayInOneWord, freeText } each boolean
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),

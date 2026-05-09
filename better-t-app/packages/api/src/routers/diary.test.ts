@@ -11,6 +11,19 @@ const habitCheckItemSchema = z.object({
   checked: z.boolean(),
 });
 
+const fieldVisibilitySchema = z.object({
+  events: z.boolean().default(true),
+  goodThings: z.boolean().default(true),
+  reflections: z.boolean().default(true),
+  gratitude: z.boolean().default(true),
+  tomorrowGoals: z.boolean().default(true),
+  tomorrowJoys: z.boolean().default(true),
+  learnings: z.boolean().default(true),
+  habitChecks: z.boolean().default(true),
+  todayInOneWord: z.boolean().default(true),
+  freeText: z.boolean().default(true),
+}).optional();
+
 const weatherEnum = z.enum(["sunny", "cloudy", "rainy", "snowy", "other"]).optional();
 const moodEnum = z.enum(["great", "good", "neutral", "bad", "terrible"]).optional();
 
@@ -30,6 +43,7 @@ const diaryInputSchema = z.object({
   todayInOneWord: z.string().max(100).optional(),
   freeText: z.string().optional(),
   isPublic: z.boolean().optional().default(false),
+  fieldVisibility: fieldVisibilitySchema,
 });
 
 describe("diary - diaryInputSchema", () => {
@@ -135,6 +149,66 @@ describe("diary - diaryInputSchema", () => {
     if (result.success) {
       expect(result.data.isPublic).toBe(true);
     }
+  });
+
+  it("fieldVisibilityを省略できる（undefined）", () => {
+    const result = diaryInputSchema.safeParse({
+      date: "2024-01-01",
+      title: "テスト",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.fieldVisibility).toBeUndefined();
+    }
+  });
+
+  it("fieldVisibilityに全フィールドを指定できる", () => {
+    const result = diaryInputSchema.safeParse({
+      date: "2024-01-01",
+      title: "テスト",
+      fieldVisibility: {
+        events: true,
+        goodThings: false,
+        reflections: true,
+        gratitude: false,
+        tomorrowGoals: true,
+        tomorrowJoys: false,
+        learnings: true,
+        habitChecks: false,
+        todayInOneWord: true,
+        freeText: false,
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success && result.data.fieldVisibility) {
+      expect(result.data.fieldVisibility.events).toBe(true);
+      expect(result.data.fieldVisibility.goodThings).toBe(false);
+      expect(result.data.fieldVisibility.freeText).toBe(false);
+    }
+  });
+
+  it("fieldVisibilityの各フィールドはデフォルトがtrue", () => {
+    const result = diaryInputSchema.safeParse({
+      date: "2024-01-01",
+      title: "テスト",
+      fieldVisibility: {},
+    });
+    expect(result.success).toBe(true);
+    if (result.success && result.data.fieldVisibility) {
+      expect(result.data.fieldVisibility.events).toBe(true);
+      expect(result.data.fieldVisibility.freeText).toBe(true);
+    }
+  });
+
+  it("fieldVisibilityにboolean以外を渡すとエラー", () => {
+    const result = diaryInputSchema.safeParse({
+      date: "2024-01-01",
+      title: "テスト",
+      fieldVisibility: {
+        events: "yes",
+      },
+    });
+    expect(result.success).toBe(false);
   });
 });
 

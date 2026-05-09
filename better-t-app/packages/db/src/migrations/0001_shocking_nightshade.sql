@@ -1,0 +1,1 @@
+ALTER TABLE `diary` ADD `field_visibility` text;
