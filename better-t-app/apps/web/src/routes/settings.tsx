@@ -3,8 +3,8 @@ import { Input } from "@better-t-app/ui/components/input";
 import { Label } from "@better-t-app/ui/components/label";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Plus, Trash2, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
@@ -59,7 +59,8 @@ function SettingsPage() {
   const [habitItems, setHabitItems] = useState<HabitCheckItem[] | null>(null);
   const [newHabitLabel, setNewHabitLabel] = useState("");
   const [profileName, setProfileName] = useState("");
-  const [profileImage, setProfileImage] = useState("");
+  const [profileImageDataUrl, setProfileImageDataUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fields = visibleFields ?? settings?.visibleFields ?? ({} as VisibleFields);
   const items = habitItems ?? settings?.habitCheckItems ?? [];
@@ -102,11 +103,47 @@ function SettingsPage() {
     setHabitItems(items.filter((item) => item.id !== id));
   };
 
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("画像ファイルを選択してください");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("ファイルサイズは5MB以下にしてください");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX = 256;
+        let { width, height } = img;
+        if (width > height) {
+          if (width > MAX) { height = Math.round(height * MAX / width); width = MAX; }
+        } else {
+          if (height > MAX) { width = Math.round(width * MAX / height); height = MAX; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, width, height);
+        setProfileImageDataUrl(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
   const handleSaveProfile = async () => {
     try {
       await updateProfileMutation.mutateAsync({
         name: profileName || undefined,
-        image: profileImage || undefined,
+        image: profileImageDataUrl || undefined,
       });
       toast.success("プロフィールを更新しました");
     } catch {
@@ -148,18 +185,54 @@ function SettingsPage() {
               onChange={(e) => setProfileName(e.target.value)}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium" style={{ fontFamily: "Manrope" }}>アイコン画像URL</Label>
-            <Input
-              placeholder="https://example.com/avatar.png"
-              value={profileImage}
-              onChange={(e) => setProfileImage(e.target.value)}
-            />
+          <div className="space-y-3">
+            <Label className="text-sm font-medium" style={{ fontFamily: "Manrope" }}>アイコン画像</Label>
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-full bg-primary/15 flex items-center justify-center text-xl font-bold text-primary">
+                {(profileImageDataUrl ?? session.data?.user.image) ? (
+                  <img
+                    src={profileImageDataUrl ?? session.data?.user.image ?? ""}
+                    alt="アバター"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{session.data?.user.name?.charAt(0) ?? "?"}</span>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={handleImageFileChange}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4" />
+                  画像を選択
+                </Button>
+                {profileImageDataUrl && (
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-destructive transition-colors text-left"
+                    onClick={() => setProfileImageDataUrl(null)}
+                  >
+                    変更をキャンセル
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">JPEG・PNG・WebP・GIF対応。最大5MB。</p>
           </div>
         </div>
         <Button
           onClick={handleSaveProfile}
-          disabled={updateProfileMutation.isPending || (!profileName && !profileImage)}
+          disabled={updateProfileMutation.isPending || (!profileName && !profileImageDataUrl)}
         >
           {updateProfileMutation.isPending ? "保存中..." : "保存する"}
         </Button>

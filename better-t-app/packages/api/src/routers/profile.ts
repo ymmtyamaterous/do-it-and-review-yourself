@@ -11,7 +11,17 @@ export const profileRouter = {
     .input(
       z.object({
         name: z.string().min(1).max(50).optional(),
-        image: z.string().url().optional(),
+        image: z
+          .string()
+          .max(200_000)
+          .refine(
+            (v) => {
+              if (v.startsWith("data:image/")) return true;
+              try { new URL(v); return true; } catch { return false; }
+            },
+            { message: "有効な画像URLまたは画像データを指定してください" },
+          )
+          .optional(),
       }),
     )
     .handler(async ({ input, context }) => {
