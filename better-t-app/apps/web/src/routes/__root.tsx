@@ -24,11 +24,11 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       {
-        title: "better-t-app",
+        title: "Diary ~do it and review yourself~",
       },
       {
         name: "description",
-        content: "better-t-app is a web application",
+        content: "日々の出来事・感情・振り返りを記録し、自己成長を促す日記アプリです。",
       },
     ],
     links: [
@@ -49,13 +49,15 @@ function RootComponent() {
       <HeadContent />
       <ThemeProvider
         attribute="class"
-        defaultTheme="dark"
+        defaultTheme="light"
         disableTransitionOnChange
-        storageKey="vite-ui-theme"
+        storageKey="diary-ui-theme"
       >
-        <div className="grid grid-rows-[auto_1fr] h-svh">
+        <div className="min-h-svh flex flex-col bg-background">
           <Header />
-          <Outlet />
+          <main className="flex-1 flex flex-col">
+            <Outlet />
+          </main>
         </div>
         <Toaster richColors />
       </ThemeProvider>

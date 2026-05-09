@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1778297269710,
+      "tag": "0000_peaceful_vermin",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1778323549668,
+      "tag": "0001_shocking_nightshade",
+      "breakpoints": true
+    }
+  ]
+}
