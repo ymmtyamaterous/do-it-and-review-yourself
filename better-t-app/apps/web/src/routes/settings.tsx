@@ -257,13 +257,13 @@ function SettingsPage() {
                 role="switch"
                 aria-checked={fields[key]}
                 onClick={() => handleToggleField(key)}
-                className={`relative h-6 w-11 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full p-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   fields[key] ? "bg-primary" : "bg-muted"
                 }`}
               >
                 <span
-                  className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                    fields[key] ? "translate-x-5.5" : "translate-x-1"
+                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                    fields[key] ? "translate-x-6" : "translate-x-1"
                   }`}
                 />
               </button>
