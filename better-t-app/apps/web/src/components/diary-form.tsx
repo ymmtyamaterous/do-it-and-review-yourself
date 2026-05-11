@@ -486,7 +486,7 @@ export function DiaryForm({
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/jpeg,image/png,image/gif,image/webp,audio/mpeg,audio/wav,audio/ogg,audio/mp4"
+            accept="image/jpeg,image/png,image/gif,image/webp,audio/*"
             className="hidden"
             onChange={handleFileAdd}
           />

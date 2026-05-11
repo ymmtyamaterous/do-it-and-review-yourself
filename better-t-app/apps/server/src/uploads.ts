@@ -11,10 +11,20 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/png",
   "image/gif",
   "image/webp",
+  // audio - ブラウザ・OS によって送信される MIME タイプが異なるため広めに許可
   "audio/mpeg",
+  "audio/mp3",
   "audio/wav",
+  "audio/x-wav",
+  "audio/wave",
   "audio/ogg",
   "audio/mp4",
+  "audio/x-m4a",
+  "audio/m4a",
+  "audio/aac",
+  "audio/x-aac",
+  "audio/webm",
+  "audio/flac",
 ]);
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -31,9 +41,18 @@ function getExtension(mimeType: string): string {
     "image/gif": "gif",
     "image/webp": "webp",
     "audio/mpeg": "mp3",
+    "audio/mp3": "mp3",
     "audio/wav": "wav",
+    "audio/x-wav": "wav",
+    "audio/wave": "wav",
     "audio/ogg": "ogg",
     "audio/mp4": "m4a",
+    "audio/x-m4a": "m4a",
+    "audio/m4a": "m4a",
+    "audio/aac": "aac",
+    "audio/x-aac": "aac",
+    "audio/webm": "webm",
+    "audio/flac": "flac",
   };
   return map[mimeType] ?? "bin";
 }
@@ -72,7 +91,7 @@ uploadsRouter.post("/api/diary/:diaryId/media", async (c) => {
   }
 
   if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    return c.json({ error: "Unsupported file type" }, 400);
+    return c.json({ error: `Unsupported file type: ${file.type}` }, 400);
   }
 
   if (file.size > MAX_FILE_SIZE) {
