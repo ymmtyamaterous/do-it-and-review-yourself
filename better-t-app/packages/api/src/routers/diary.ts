@@ -1,5 +1,5 @@
 import { db } from "@better-t-app/db";
-import { diary } from "@better-t-app/db/schema/diary";
+import { diary, diaryMedia } from "@better-t-app/db/schema/diary";
 import { user } from "@better-t-app/db/schema/auth";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
@@ -346,5 +346,57 @@ export const diaryRouter = {
         fieldVisibility: fv,
         author: { name: entry.authorName, image: entry.authorImage ?? null },
       };
+    }),
+
+  listByMonth: protectedProcedure
+    .input(
+      z.object({
+        year: z.number().int().min(2000).max(2100),
+        month: z.number().int().min(1).max(12),
+      }),
+    )
+    .handler(async ({ input, context }) => {
+      const yearStr = String(input.year);
+      const monthStr = String(input.month).padStart(2, "0");
+      const prefix = `${yearStr}-${monthStr}-`;
+
+      const items = await db
+        .select({ id: diary.id, date: diary.date })
+        .from(diary)
+        .where(
+          and(
+            eq(diary.userId, context.session.user.id),
+            isNull(diary.deletedAt),
+            like(diary.date, `${prefix}%`),
+          ),
+        )
+        .orderBy(diary.date);
+
+      return items;
+    }),
+
+  getMedia: protectedProcedure
+    .input(z.object({ diaryId: z.string() }))
+    .handler(async ({ input, context }) => {
+      // 日記の所有者確認（公開日記でも自分のみ取得可）
+      const [entry] = await db
+        .select({ id: diary.id })
+        .from(diary)
+        .where(
+          and(
+            eq(diary.id, input.diaryId),
+            eq(diary.userId, context.session.user.id),
+            isNull(diary.deletedAt),
+          ),
+        );
+      if (!entry) throw new ORPCError("NOT_FOUND");
+
+      const media = await db
+        .select()
+        .from(diaryMedia)
+        .where(eq(diaryMedia.diaryId, input.diaryId))
+        .orderBy(diaryMedia.order);
+
+      return media;
     }),
 };

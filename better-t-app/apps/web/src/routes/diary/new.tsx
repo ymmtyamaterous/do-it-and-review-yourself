@@ -10,6 +10,9 @@ import type { DiaryFormValues, FieldVisibility } from "@/components/diary-form";
 
 export const Route = createFileRoute("/diary/new")({
   component: DiaryNewPage,
+  validateSearch: (search: Record<string, unknown>) => ({
+    date: typeof search.date === "string" ? search.date : undefined,
+  }),
   beforeLoad: async () => {
     const session = await authClient.getSession();
     if (!session.data) {
@@ -20,15 +23,16 @@ export const Route = createFileRoute("/diary/new")({
 
 function DiaryNewPage() {
   const navigate = useNavigate({ from: Route.fullPath });
+  const { date: initialDate } = Route.useSearch();
   const queryClient = useQueryClient();
 
   const { data: settings } = useQuery(orpc.userSettings.get.queryOptions());
 
   const createMutation = useMutation(orpc.diary.create.mutationOptions());
 
-  const handleSubmit = async (values: DiaryFormValues, habitChecks: { label: string; checked: boolean }[], fieldVisibility: FieldVisibility) => {
+  const handleSubmit = async (values: DiaryFormValues, habitChecks: { label: string; checked: boolean }[], fieldVisibility: FieldVisibility, pendingFiles: File[]) => {
     try {
-      await createMutation.mutateAsync({
+      const created = await createMutation.mutateAsync({
         date: values.date,
         title: values.title,
         weather: values.weather as "sunny" | "cloudy" | "rainy" | "snowy" | "other" | undefined || undefined,
@@ -46,6 +50,14 @@ function DiaryNewPage() {
         isPublic: values.isPublic,
         fieldVisibility,
       });
+
+      // ファイルアップロード
+      for (const file of pendingFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
+        await fetch(`/api/diary/${created.id}/media`, { method: "POST", body: formData });
+      }
+
       await queryClient.invalidateQueries({ queryKey: orpc.diary.list.queryOptions({ input: { page: 1 } }).queryKey });
       toast.success("日記を保存しました");
       navigate({ to: "/diary" });
@@ -74,6 +86,7 @@ function DiaryNewPage() {
         habitCheckItems={settings?.habitCheckItems}
         onSubmit={handleSubmit}
         submitLabel="保存する"
+        defaultValues={initialDate ? { date: initialDate } : undefined}
       />
     </div>
   );

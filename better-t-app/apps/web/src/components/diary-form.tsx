@@ -3,8 +3,8 @@ import { Input } from "@better-t-app/ui/components/input";
 import { Label } from "@better-t-app/ui/components/label";
 import { Checkbox } from "@better-t-app/ui/components/checkbox";
 import { useForm } from "@tanstack/react-form";
-import { useState } from "react";
-import { Globe, Lock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Globe, Lock, Music, Paperclip, X } from "lucide-react";
 import { z } from "zod";
 
 const weatherOptions = [
@@ -75,7 +75,7 @@ type Props = {
   habitCheckItems?: HabitCheckItem[];
   visibleFields?: VisibleFields;
   defaultFieldVisibility?: Partial<FieldVisibility>;
-  onSubmit: (values: DiaryFormValues, habitChecks: HabitCheck[], fieldVisibility: FieldVisibility) => Promise<void>;
+  onSubmit: (values: DiaryFormValues, habitChecks: HabitCheck[], fieldVisibility: FieldVisibility, pendingFiles: File[]) => Promise<void>;
   submitLabel: string;
 };
 
@@ -144,6 +144,35 @@ export function DiaryForm({
 }: Props) {
   const today = new Date().toISOString().slice(0, 10);
 
+  // 添付ファイル
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // object URL のクリーンアップ
+  useEffect(() => {
+    return () => {
+      for (const url of previewUrls) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [previewUrls]);
+
+  const handleFileAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const newUrls = files.map((f) => (f.type.startsWith("image/") ? URL.createObjectURL(f) : ""));
+    setPendingFiles((prev) => [...prev, ...files]);
+    setPreviewUrls((prev) => [...prev, ...newUrls]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    const url = previewUrls[index];
+    if (url) URL.revokeObjectURL(url);
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
   // 習慣チェックの checked 状態を管理
   const [habitCheckedMap, setHabitCheckedMap] = useState<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {};
@@ -199,7 +228,7 @@ export function DiaryForm({
         label: item.label,
         checked: habitCheckedMap[item.id] ?? false,
       }));
-      await onSubmit(value, checks, fieldVisibility);
+      await onSubmit(value, checks, fieldVisibility, pendingFiles);
     },
   });
 
@@ -436,6 +465,69 @@ export function DiaryForm({
           </div>
         )}
       </form.Field>
+      </div>
+
+      {/* 画像・音声ファイル */}
+      <div className="rounded-2xl bg-card px-6 py-5 shadow-sm ring-1 ring-black/5 dark:ring-white/8 space-y-3">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground" style={{ fontFamily: "Manrope" }}>
+            画像・音声ファイル
+          </Label>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            style={{ fontFamily: "Manrope" }}
+          >
+            <Paperclip className="h-3.5 w-3.5" />
+            ファイルを追加
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/gif,image/webp,audio/mpeg,audio/wav,audio/ogg,audio/mp4"
+            className="hidden"
+            onChange={handleFileAdd}
+          />
+        </div>
+        {pendingFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {pendingFiles.map((file, i) => (
+              <div
+                key={`${file.name}-${i}`}
+                className="relative flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2"
+              >
+                {file.type.startsWith("image/") ? (
+                  <img
+                    src={previewUrls[i]}
+                    alt={file.name}
+                    className="h-16 w-16 rounded-md object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-md bg-muted">
+                    <Music className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="max-w-24 flex flex-col">
+                  <span className="truncate text-xs font-medium text-foreground" style={{ fontFamily: "Manrope" }}>
+                    {file.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {(file.size / 1024 / 1024).toFixed(1)}MB
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeFile(i)}
+                  className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 公開設定 */}

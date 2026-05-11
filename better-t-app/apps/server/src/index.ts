@@ -12,6 +12,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { serveStatic } from "hono/bun";
+import { uploadsRouter } from "./uploads";
 
 // マイグレーションを起動時に実行
 await runMigrations().catch((err) => {
@@ -33,6 +34,12 @@ app.use(
 );
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+// メディアアップロード・削除エンドポイント
+app.route("/", uploadsRouter);
+
+// アップロード済みファイルを静的配信
+app.use("/uploads/*", serveStatic({ root: "." }));
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
