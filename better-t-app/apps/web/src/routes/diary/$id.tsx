@@ -279,25 +279,30 @@ function DiaryDetailPage() {
                   添付ファイル
                 </h3>
               </div>
-              <div className="flex flex-wrap gap-3">
-                {mediaList.map((media) =>
-                  media.type === "image" ? (
-                    <a key={media.id} href={media.url} target="_blank" rel="noreferrer">
-                      <img
-                        src={media.url}
-                        alt={media.filename}
-                        className="h-28 w-28 rounded-xl object-cover border border-border hover:opacity-90 transition-opacity"
-                      />
-                    </a>
-                  ) : (
-                    <div key={media.id} className="flex flex-col gap-1 rounded-xl border border-border bg-muted/30 p-3 min-w-40">
-                      <span className="text-xs font-medium text-foreground truncate max-w-36" style={{ fontFamily: "Manrope" }}>
-                        {media.filename}
-                      </span>
-                      <audio controls src={media.url} className="w-full h-8" />
-                    </div>
-                  ),
+              <div className="flex flex-col gap-4">
+                {/* 画像群 */}
+                {mediaList.some((m) => m.type === "image") && (
+                  <div className="flex flex-wrap gap-3">
+                    {mediaList.filter((m) => m.type === "image").map((media) => (
+                      <a key={media.id} href={media.url} target="_blank" rel="noreferrer">
+                        <img
+                          src={media.url}
+                          alt={media.filename}
+                          className="h-28 w-28 rounded-xl object-cover border border-border hover:opacity-90 transition-opacity"
+                        />
+                      </a>
+                    ))}
+                  </div>
                 )}
+                {/* 音声群 */}
+                {mediaList.filter((m) => m.type === "audio").map((media) => (
+                  <div key={media.id} className="flex flex-col gap-2 rounded-xl border border-border bg-muted/30 p-3 w-full sm:w-80">
+                    <span className="text-xs font-medium text-foreground truncate" style={{ fontFamily: "Manrope" }}>
+                      {media.filename}
+                    </span>
+                    <audio controls src={media.url} className="w-full" />
+                  </div>
+                ))}
               </div>
             </div>
           )}
