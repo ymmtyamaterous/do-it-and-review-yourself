@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
+import { env } from "@better-t-app/env/web";
 import { orpc } from "@/utils/orpc";
 import { DiaryForm } from "@/components/diary-form";
 import type { DiaryFormValues, FieldVisibility } from "@/components/diary-form";
@@ -55,7 +56,7 @@ function DiaryEditPage() {
       for (const file of pendingFiles) {
         const formData = new FormData();
         formData.append("file", file);
-        await fetch(`/api/diary/${id}/media`, { method: "POST", body: formData });
+        await fetch(`${env.VITE_SERVER_URL}/api/diary/${id}/media`, { method: "POST", body: formData, credentials: "include" });
       }
 
       await queryClient.invalidateQueries({ queryKey: orpc.diary.getById.queryOptions({ input: { id } }).queryKey });

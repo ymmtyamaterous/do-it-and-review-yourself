@@ -4,3 +4,4 @@ devcontainer.json
 better-t-app/local.db
 
 docs/user/*.png
+better-t-app/apps/server/uploads
