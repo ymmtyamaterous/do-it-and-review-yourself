@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
+import { env } from "@better-t-app/env/web";
 import { orpc } from "@/utils/orpc";
 import { DiaryForm } from "@/components/diary-form";
 import type { DiaryFormValues, FieldVisibility } from "@/components/diary-form";
@@ -29,7 +30,7 @@ function DiaryEditPage() {
 
   const updateMutation = useMutation(orpc.diary.update.mutationOptions());
 
-  const handleSubmit = async (values: DiaryFormValues, habitChecks: { label: string; checked: boolean }[], fieldVisibility: FieldVisibility) => {
+  const handleSubmit = async (values: DiaryFormValues, habitChecks: { label: string; checked: boolean }[], fieldVisibility: FieldVisibility, pendingFiles: File[]) => {
     try {
       await updateMutation.mutateAsync({
         id,
@@ -50,6 +51,14 @@ function DiaryEditPage() {
         isPublic: values.isPublic,
         fieldVisibility,
       });
+
+      // ファイルアップロード
+      for (const file of pendingFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
+        await fetch(`${env.VITE_SERVER_URL}/api/diary/${id}/media`, { method: "POST", body: formData, credentials: "include" });
+      }
+
       await queryClient.invalidateQueries({ queryKey: orpc.diary.getById.queryOptions({ input: { id } }).queryKey });
       await queryClient.invalidateQueries({ queryKey: orpc.diary.list.queryOptions({ input: { page: 1 } }).queryKey });
       toast.success("日記を更新しました");

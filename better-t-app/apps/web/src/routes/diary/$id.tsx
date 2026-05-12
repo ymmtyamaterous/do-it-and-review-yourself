@@ -1,8 +1,8 @@
 import { Button } from "@better-t-app/ui/components/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, Globe, Lock, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { CalendarDays, ChevronLeft, Globe, Heart, Lightbulb, Lock, Pencil, PencilLine, RefreshCcw, Smile, Star, Target, Trash2 } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
@@ -30,6 +30,11 @@ function DiaryDetailPage() {
   const { data, isLoading, isError } = useQuery(
     orpc.diary.getById.queryOptions({ input: { id } }),
   );
+
+  const { data: mediaList } = useQuery({
+    ...orpc.diary.getMedia.queryOptions({ input: { diaryId: id } }),
+    enabled: !!session.data,
+  });
 
   const deleteMutation = useMutation(orpc.diary.delete.mutationOptions());
 
@@ -69,19 +74,47 @@ function DiaryDetailPage() {
   const habitChecks = data.habitChecks as { label: string; checked: boolean }[] | null;
   const fv = data.fieldVisibility as Record<string, boolean> | null;
 
-  const sections = [
-    { label: "出来事", value: data.events, fvKey: "events" },
-    { label: "良かったこと", value: data.goodThings, fvKey: "goodThings" },
-    { label: "反省点", value: data.reflections, fvKey: "reflections" },
-    { label: "感謝したこと", value: data.gratitude, fvKey: "gratitude" },
-    { label: "明日の目標", value: data.tomorrowGoals, fvKey: "tomorrowGoals" },
-    { label: "明日の楽しみ", value: data.tomorrowJoys, fvKey: "tomorrowJoys" },
-    { label: "学んだこと・気づき", value: data.learnings, fvKey: "learnings" },
-    { label: "自由記述欄", value: data.freeText, fvKey: "freeText" },
-  ];
+  const VisibilityBadge = ({ fvKey }: { fvKey: string }) => {
+    if (!data.isPublic || fv === null) return null;
+    return fv[fvKey] !== false ? (
+      <span className="flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+        <Globe className="h-2.5 w-2.5" />公開
+      </span>
+    ) : (
+      <span className="flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <Lock className="h-2.5 w-2.5" />非公開
+      </span>
+    );
+  };
+
+  const FullSection = ({ icon, label, value, fvKey }: { icon: ReactNode; label: string; value: string; fvKey: string }) => (
+    <div>
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-muted-foreground">{icon}</span>
+        <h3 className="text-sm font-semibold text-foreground" style={{ fontFamily: "Manrope" }}>{label}</h3>
+        <VisibilityBadge fvKey={fvKey} />
+      </div>
+      <p className="whitespace-pre-wrap text-foreground" style={{ fontFamily: "Newsreader", fontSize: "16px", lineHeight: "28px" }}>
+        {value}
+      </p>
+    </div>
+  );
+
+  const CardSection = ({ icon, label, value, fvKey }: { icon: ReactNode; label: string; value: string; fvKey: string }) => (
+    <div className="rounded-xl border border-border bg-muted/30 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-muted-foreground">{icon}</span>
+        <h3 className="text-sm font-semibold text-foreground" style={{ fontFamily: "Manrope" }}>{label}</h3>
+        <VisibilityBadge fvKey={fvKey} />
+      </div>
+      <p className="whitespace-pre-wrap text-sm text-foreground" style={{ fontFamily: "Newsreader", lineHeight: "24px" }}>
+        {value}
+      </p>
+    </div>
+  );
 
   return (
-    <div className="mx-auto max-w-2xl w-full px-6 py-10">
+    <div className="mx-auto max-w-3xl w-full px-6 py-10">
       {/* ナビ */}
       <div className="mb-8 flex items-center justify-between">
         <Link
@@ -148,86 +181,129 @@ function DiaryDetailPage() {
           )}
         </div>
 
-        {sections.some(s => s.value) && (
+        {(data.events || data.goodThings || data.reflections || data.learnings || data.gratitude ||
+          data.tomorrowGoals || data.tomorrowJoys || data.freeText ||
+          (habitChecks && habitChecks.length > 0)) && (
           <hr className="my-7 border-border/60" />
         )}
 
         {/* 各セクション */}
-        <div className="space-y-7">
-          {sections.map(({ label, value, fvKey }) =>
-            value ? (
-              <div key={label}>
-                <div className="mb-2 flex items-center gap-2">
-                  <h3
-                    className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                    style={{ fontFamily: "Manrope" }}
-                  >
-                    {label}
-                  </h3>
-                  {data.isPublic && fv !== null && (
-                    fv[fvKey] !== false ? (
-                      <span className="flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                        <Globe className="h-2.5 w-2.5" />公開
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        <Lock className="h-2.5 w-2.5" />非公開
-                      </span>
-                    )
-                  )}
-                </div>
-                <p
-                  className="whitespace-pre-wrap text-foreground"
-                  style={{ fontFamily: "Newsreader", fontSize: "16px", lineHeight: "28px" }}
-                >
-                  {value}
-                </p>
-              </div>
-            ) : null,
+        <div className="space-y-6">
+          {/* 出来事 - 全幅 */}
+          {data.events && (
+            <FullSection icon={<CalendarDays className="h-4 w-4" />} label="出来事" value={data.events} fvKey="events" />
           )}
 
+          {/* 良かったこと | 反省点 - 2カラム */}
+          {(data.goodThings || data.reflections) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {data.goodThings && (
+                <CardSection icon={<Star className="h-4 w-4" />} label="良かったこと" value={data.goodThings} fvKey="goodThings" />
+              )}
+              {data.reflections && (
+                <CardSection icon={<RefreshCcw className="h-4 w-4" />} label="反省点" value={data.reflections} fvKey="reflections" />
+              )}
+            </div>
+          )}
+
+          {/* 学んだこと・気づき | 感謝したこと - 2カラム */}
+          {(data.learnings || data.gratitude) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {data.learnings && (
+                <CardSection icon={<Lightbulb className="h-4 w-4" />} label="学んだこと・気づき" value={data.learnings} fvKey="learnings" />
+              )}
+              {data.gratitude && (
+                <CardSection icon={<Heart className="h-4 w-4" />} label="感謝したこと" value={data.gratitude} fvKey="gratitude" />
+              )}
+            </div>
+          )}
+
+          {/* 明日の目標 | 明日の楽しみ - 2カラム */}
+          {(data.tomorrowGoals || data.tomorrowJoys) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {data.tomorrowGoals && (
+                <CardSection icon={<Target className="h-4 w-4" />} label="明日の目標" value={data.tomorrowGoals} fvKey="tomorrowGoals" />
+              )}
+              {data.tomorrowJoys && (
+                <CardSection icon={<Smile className="h-4 w-4" />} label="明日の楽しみ" value={data.tomorrowJoys} fvKey="tomorrowJoys" />
+              )}
+            </div>
+          )}
+
+          {/* 自由記述欄 - 全幅 */}
+          {data.freeText && (
+            <FullSection icon={<PencilLine className="h-4 w-4" />} label="自由記述欄" value={data.freeText} fvKey="freeText" />
+          )}
+
+          {/* 健康・習慣チェック - 全幅・横並び */}
           {habitChecks && habitChecks.length > 0 && (
             <div>
               <div className="mb-3 flex items-center gap-2">
-                <h3
-                  className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
-                  style={{ fontFamily: "Manrope" }}
-                >
+                <Heart className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground" style={{ fontFamily: "Manrope" }}>
                   健康・習慣チェック
                 </h3>
-                {data.isPublic && fv !== null && (
-                  fv.habitChecks !== false ? (
-                    <span className="flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                      <Globe className="h-2.5 w-2.5" />公開
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-0.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      <Lock className="h-2.5 w-2.5" />非公開
-                    </span>
-                  )
-                )}
+                <VisibilityBadge fvKey="habitChecks" />
               </div>
-              <ul className="space-y-2">
+              <div className="flex flex-wrap gap-3">
                 {habitChecks.map((item) => (
-                  <li key={item.label} className="flex items-center gap-3">
+                  <div
+                    key={item.label}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                      item.checked
+                        ? "border-primary/30 bg-primary/10 text-primary"
+                        : "border-border bg-muted/30 text-muted-foreground"
+                    }`}
+                    style={{ fontFamily: "Manrope" }}
+                  >
                     <span
-                      className={`flex h-5 w-5 items-center justify-center rounded-md text-xs ${
-                        item.checked
-                          ? "bg-primary/15 text-primary"
-                          : "bg-muted text-muted-foreground"
+                      className={`flex h-4 w-4 items-center justify-center rounded text-[10px] ${
+                        item.checked ? "bg-primary text-primary-foreground" : "border border-border bg-background"
                       }`}
                     >
                       {item.checked ? "✓" : ""}
                     </span>
-                    <span
-                      className={`text-sm ${item.checked ? "text-foreground" : "text-muted-foreground line-through"}`}
-                      style={{ fontFamily: "Manrope" }}
-                    >
-                      {item.label}
-                    </span>
-                  </li>
+                    {item.label}
+                  </div>
                 ))}
-              </ul>
+              </div>
+            </div>
+          )}
+
+          {/* 添付メディア */}
+          {mediaList && mediaList.length > 0 && (
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground" style={{ fontFamily: "Manrope" }}>
+                  添付ファイル
+                </h3>
+              </div>
+              <div className="flex flex-col gap-4">
+                {/* 画像群 */}
+                {mediaList.some((m) => m.type === "image") && (
+                  <div className="flex flex-wrap gap-3">
+                    {mediaList.filter((m) => m.type === "image").map((media) => (
+                      <a key={media.id} href={media.url} target="_blank" rel="noreferrer">
+                        <img
+                          src={media.url}
+                          alt={media.filename}
+                          className="h-28 w-28 rounded-xl object-cover border border-border hover:opacity-90 transition-opacity"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {/* 音声群 */}
+                {mediaList.filter((m) => m.type === "audio").map((media) => (
+                  <div key={media.id} className="flex flex-col gap-2 rounded-xl border border-border bg-muted/30 p-3 w-full sm:w-80">
+                    <span className="text-xs font-medium text-foreground truncate" style={{ fontFamily: "Manrope" }}>
+                      {media.filename}
+                    </span>
+                    <audio controls src={media.url} className="w-full" />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

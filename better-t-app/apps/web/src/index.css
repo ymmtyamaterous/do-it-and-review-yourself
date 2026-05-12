@@ -1,1 +1,92 @@
 @import "@better-t-app/ui/globals.css";
+
+/* react-calendar overrides */
+.diary-calendar-wrapper .react-calendar {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--card);
+  color: var(--foreground);
+  font-family: Manrope, sans-serif;
+  padding: 1rem;
+}
+
+.diary-calendar-wrapper .react-calendar__navigation button {
+  color: var(--foreground);
+  background: transparent;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  min-width: 2rem;
+}
+
+.diary-calendar-wrapper .react-calendar__navigation button:hover,
+.diary-calendar-wrapper .react-calendar__navigation button:focus {
+  background: var(--accent);
+}
+
+.diary-calendar-wrapper .react-calendar__month-view__weekdays {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-decoration: none;
+}
+
+.diary-calendar-wrapper .react-calendar__month-view__weekdays abbr {
+  text-decoration: none;
+}
+
+.diary-calendar-wrapper .react-calendar__tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.25rem 0.75rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  transition: background 0.1s;
+}
+
+.diary-calendar-wrapper .react-calendar__tile:hover {
+  background: var(--accent);
+}
+
+.diary-calendar-wrapper .react-calendar__tile--now {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.diary-calendar-wrapper .react-calendar__tile--now:hover {
+  background: color-mix(in srgb, var(--primary) 85%, transparent);
+}
+
+.diary-calendar-wrapper .react-calendar__tile--active {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.diary-calendar-wrapper .react-calendar__month-view__days__day--neighboringMonth {
+  color: var(--muted-foreground);
+  opacity: 0.4;
+}
+
+/* Dot for dates with diary entries */
+.diary-calendar-wrapper .react-calendar__tile .diary-dot {
+  position: absolute;
+  bottom: 0.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 9999px;
+  background: var(--primary);
+  display: block;
+}
+
+.diary-calendar-wrapper .react-calendar__tile--now .diary-dot,
+.diary-calendar-wrapper .react-calendar__tile--active .diary-dot {
+  background: var(--primary-foreground);
+}
+
