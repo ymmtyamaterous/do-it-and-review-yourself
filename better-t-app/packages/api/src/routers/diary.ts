@@ -361,7 +361,7 @@ export const diaryRouter = {
       const prefix = `${yearStr}-${monthStr}-`;
 
       const items = await db
-        .select({ id: diary.id, date: diary.date })
+        .select({ id: diary.id, date: diary.date, title: diary.title, isPublic: diary.isPublic })
         .from(diary)
         .where(
           and(
