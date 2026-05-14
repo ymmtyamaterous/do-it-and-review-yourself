@@ -1,6 +1,7 @@
 import { db } from "@better-t-app/db";
 import { diary, diaryMedia } from "@better-t-app/db/schema/diary";
 import { auth } from "@better-t-app/auth";
+import { env } from "@better-t-app/env/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { Hono } from "hono";
 import { mkdir, unlink } from "node:fs/promises";
@@ -28,7 +29,7 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const UPLOADS_DIR = "./uploads";
+const UPLOADS_DIR = env.UPLOADS_DIR;
 
 function generateId(): string {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 20);
