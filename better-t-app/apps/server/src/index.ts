@@ -39,7 +39,10 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 app.route("/", uploadsRouter);
 
 // アップロード済みファイルを静的配信
-app.use("/uploads/*", serveStatic({ root: "." }));
+app.use("/uploads/*", serveStatic({
+  root: env.UPLOADS_DIR,
+  rewriteRequestPath: (path) => path.replace(/^\/uploads/, ""),
+}));
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
