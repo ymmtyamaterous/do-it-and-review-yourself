@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
+import { Pagination } from "@/components/pagination";
 import { orpc } from "@/utils/orpc";
 import { MOOD_COLORS, MOOD_LABELS, WEATHER_LABELS } from "@/utils/diary";
 
@@ -111,31 +112,7 @@ function PublicDiaryListPage() {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <div className="mt-10 flex items-center justify-center gap-3">
-          <button
-            type="button"
-            className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-50 transition-colors"
-            style={{ fontFamily: "Manrope" }}
-            disabled={page <= 1}
-            onClick={() => handlePageChange(page - 1)}
-          >
-            前へ
-          </button>
-          <span className="text-sm text-muted-foreground" style={{ fontFamily: "Manrope" }}>
-            {page} / {totalPages}
-          </span>
-          <button
-            type="button"
-            className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted disabled:opacity-50 transition-colors"
-            style={{ fontFamily: "Manrope" }}
-            disabled={page >= totalPages}
-            onClick={() => handlePageChange(page + 1)}
-          >
-            次へ
-          </button>
-        </div>
-      )}
+      <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
     </div>
   );
 }

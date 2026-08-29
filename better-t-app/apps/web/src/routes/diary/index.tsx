@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { authClient } from "@/lib/auth-client";
 import { DiaryCalendar } from "@/components/diary-calendar";
+import { Pagination } from "@/components/pagination";
 import { orpc } from "@/utils/orpc";
 import { MOOD_COLORS, MOOD_LABELS, WEATHER_LABELS } from "@/utils/diary";
 
@@ -181,20 +182,7 @@ function DiaryListPage() {
             </div>
           )}
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-10 flex items-center justify-center gap-3">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => handlePageChange(page - 1)}>
-                前へ
-              </Button>
-              <span className="text-sm text-muted-foreground" style={{ fontFamily: "Manrope" }}>
-                {page} / {totalPages}
-              </span>
-              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => handlePageChange(page + 1)}>
-                次へ
-              </Button>
-            </div>
-          )}
+          <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
         </>
       )}
     </div>
