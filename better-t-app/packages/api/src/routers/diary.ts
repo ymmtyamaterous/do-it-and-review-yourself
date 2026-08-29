@@ -2,7 +2,7 @@ import { db } from "@better-t-app/db";
 import { diary, diaryMedia } from "@better-t-app/db/schema/diary";
 import { user } from "@better-t-app/db/schema/auth";
 import { ORPCError } from "@orpc/server";
-import { and, desc, eq, isNull, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, like, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { protectedProcedure, publicProcedure } from "../index";
@@ -168,10 +168,47 @@ export const diaryRouter = {
       if (!entry.isPublic && entry.userId !== context.session.user.id) {
         throw new ORPCError("FORBIDDEN");
       }
+
+      const sameDateOlderCondition = and(
+        eq(diary.date, entry.date),
+        or(
+          lt(diary.createdAt, entry.createdAt),
+          and(eq(diary.createdAt, entry.createdAt), lt(diary.id, entry.id)),
+        ),
+      );
+      const sameDateNewerCondition = and(
+        eq(diary.date, entry.date),
+        or(
+          gt(diary.createdAt, entry.createdAt),
+          and(eq(diary.createdAt, entry.createdAt), gt(diary.id, entry.id)),
+        ),
+      );
+      const navigationConditions = [
+        eq(diary.userId, entry.userId),
+        isNull(diary.deletedAt),
+        ...(entry.userId === context.session.user.id ? [] : [eq(diary.isPublic, true)]),
+      ];
+      const [previousEntry, nextEntry] = await Promise.all([
+        db
+          .select({ id: diary.id, date: diary.date, title: diary.title })
+          .from(diary)
+          .where(and(...navigationConditions, or(lt(diary.date, entry.date), sameDateOlderCondition)))
+          .orderBy(desc(diary.date), desc(diary.createdAt), desc(diary.id))
+          .limit(1),
+        db
+          .select({ id: diary.id, date: diary.date, title: diary.title })
+          .from(diary)
+          .where(and(...navigationConditions, or(gt(diary.date, entry.date), sameDateNewerCondition)))
+          .orderBy(asc(diary.date), asc(diary.createdAt), asc(diary.id))
+          .limit(1),
+      ]);
+
       return {
         ...entry,
         habitChecks: entry.habitChecks ? JSON.parse(entry.habitChecks) : null,
         fieldVisibility: entry.fieldVisibility ? JSON.parse(entry.fieldVisibility) : null,
+        previousEntry: previousEntry[0] ?? null,
+        nextEntry: nextEntry[0] ?? null,
       };
     }),
 

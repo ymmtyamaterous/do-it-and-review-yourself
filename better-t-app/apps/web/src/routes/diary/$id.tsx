@@ -1,7 +1,7 @@
 import { Button } from "@better-t-app/ui/components/button";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, ChevronLeft, Globe, Heart, Lightbulb, Lock, Pencil, PencilLine, RefreshCcw, Smile, Star, Target, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Globe, Heart, Lightbulb, Lock, Pencil, PencilLine, RefreshCcw, Smile, Star, Target, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { toast } from "sonner";
 
@@ -140,6 +140,41 @@ function DiaryDetailPage() {
               {confirmDelete ? "本当に削除" : "削除"}
             </Button>
           </div>
+        )}
+      </div>
+
+      <div className="mb-6 flex items-center justify-between gap-3">
+        {data.previousEntry ? (
+          <Button
+            render={<Link to="/diary/$id" params={{ id: data.previousEntry.id }} />}
+            variant="outline"
+            size="sm"
+            title={`${data.previousEntry.date} ${data.previousEntry.title}`}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+            前の日記
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled>
+            <ChevronLeft className="h-3.5 w-3.5" />
+            前の日記
+          </Button>
+        )}
+        {data.nextEntry ? (
+          <Button
+            render={<Link to="/diary/$id" params={{ id: data.nextEntry.id }} />}
+            variant="outline"
+            size="sm"
+            title={`${data.nextEntry.date} ${data.nextEntry.title}`}
+          >
+            次の日記
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" disabled>
+            次の日記
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
         )}
       </div>
 
