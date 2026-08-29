@@ -62,7 +62,7 @@ function DiaryListPage() {
             {data?.total ?? 0}件の記録
           </p>
         </div>
-        <Button render={<Link to="/diary/new" />}>
+        <Button render={<Link to="/diary/new" search={{ date: undefined }} />}>
           <Plus className="h-4 w-4" />
           新しい日記
         </Button>
@@ -129,7 +129,7 @@ function DiaryListPage() {
               </div>
               <p className="text-base font-medium text-foreground" style={{ fontFamily: "Manrope" }}>まだ日記がありません</p>
               <p className="mt-1 text-sm text-muted-foreground">最初の一ページを書いてみましょう。</p>
-              <Button render={<Link to="/diary/new" />} className="mt-6">最初の日記を書く</Button>
+              <Button render={<Link to="/diary/new" search={{ date: undefined }} />} className="mt-6">最初の日記を書く</Button>
             </div>
           )}
 
