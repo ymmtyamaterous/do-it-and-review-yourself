@@ -8,6 +8,7 @@ import { HeadContent, Outlet, createRootRouteWithContext } from "@tanstack/react
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import { useState } from "react";
 
+import Footer from "@/components/footer";
 import Header from "@/components/header";
 import { ThemeProvider } from "@/components/theme-provider";
 import { link, orpc } from "@/utils/orpc";
@@ -58,6 +59,7 @@ function RootComponent() {
           <main className="flex-1 flex flex-col">
             <Outlet />
           </main>
+          <Footer />
         </div>
         <Toaster richColors />
       </ThemeProvider>
